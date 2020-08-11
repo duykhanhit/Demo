@@ -25,7 +25,7 @@ app.use(function(req, res, next) {
 });
 
 db.sequelize.sync({
-  force: false,
+  force: process.env.STATUS,
 });
 
 // error handler
