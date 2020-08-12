@@ -1,36 +1,50 @@
 const db = require("../models");
+const jwt = require("jsonwebtoken");
 
 module.exports = {
   //@desc     create a Post
   //@router   /api/post
-  createPost: async (req, res) => {
+  createPost: async (req, res, next) => {
     try {
-      const { name, summary } = req.query;
+      const { name, summary, token } = req.query;
 
-      const post = await db.post.findOne({
-        where: {
-          name: name,
-        },
-      });
-
-      if (post) {
-        res.status(401).json({
-          success: false,
-          data: "Đã tồn tại.",
-        });
-
-        return;
+      if (!token) {
+        return next(new Error(`Không có token.`, 401));
       }
 
-      const newPost = await db.post.create({
-        name,
-        summary,
-      });
+      try {
+        const decoded = jwt.verify(token, "abab");
 
-      res.status(201).json({
-        success: true,
-        data: newPost,
-      });
+        req.user = await db.user.findByPk(decoded.user.id);
+        
+        const post = await db.post.findOne({
+          where: {
+            name: name,
+          },
+        });
+
+        if (post) {
+          res.status(401).json({
+            success: false,
+            data: "Đã tồn tại.",
+          });
+
+          return;
+        }
+
+        const newPost = await db.post.create({
+          name,
+          summary,
+        });
+
+        res.status(201).json({
+          success: true,
+          data: newPost,
+        });
+      } catch (err) {
+        console.log(err);
+        return next(new Error(`Bạn không có quyền truy cập.`, 401));
+      }
     } catch (err) {
       res.status(401).json({
         success: false,
@@ -41,14 +55,27 @@ module.exports = {
 
   //@desc     get all posts
   //@router   /api/post
-  getAllPost: async (req, res) => {
+  getAllPost: async (req, res, next) => {
     try {
-      const post = await db.post.findAndCountAll();
+      const { token } = req.query;
+      if (!token) {
+        return next(new Error(`Không có token.`, 401));
+      }
 
-      res.status(200).json({
-        success: true,
-        data: post,
-      });
+      try {
+        const decoded = jwt.verify(token, "abab");
+
+        req.user = await db.user.findByPk(decoded.user.id);
+        const post = await db.post.findAndCountAll();
+
+        res.status(200).json({
+          success: true,
+          data: post,
+        });
+      } catch (err) {
+        console.log(err);
+        return next(new Error(`Bạn không có quyền truy cập.`, 401));
+      }
     } catch (err) {
       res.status(401).json({
         success: false,

@@ -8,13 +8,13 @@ var router = express.Router();
 
 //Router all post
 router
-  .route('/post')
+  .route('/')
   .post(createPost)
   .get(getAllPost);
 
 //Router single post
 router
-  .route('/post/:id')
+  .route('/:id')
   .get(getPost);
 
 
